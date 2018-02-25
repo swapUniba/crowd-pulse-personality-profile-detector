@@ -9,6 +9,8 @@ import com.github.frapontillo.pulse.spi.IPluginConfig;
 import com.github.frapontillo.pulse.spi.PluginConfigHelper;
 import com.google.gson.JsonElement;
 import org.apache.logging.log4j.Logger;
+import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.UpdateOperations;
 import rx.Observable.Operator;
 import rx.Subscriber;
 import rx.observers.SafeSubscriber;
@@ -61,7 +63,13 @@ public class PersonalityProfileDetector extends IPlugin<Message, Message, Person
                 }
                 userPersonalityList.add(calculatePersonality(allMessages));
                 logger.info("Personality calculated");
-                profileRepository.save(user);
+
+                // update the user profile
+                Query<Profile> query = profileRepository.createQuery();
+                query.field("username").equal(user.getUsername());
+                UpdateOperations<Profile> update = profileRepository.createUpdateOperations();
+                update.set("personalities", userPersonalityList);
+                profileRepository.updateFirst(query, update);
 
                 reportPluginAsCompleted();
                 subscriber.onCompleted();
