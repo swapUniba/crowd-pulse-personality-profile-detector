@@ -57,19 +57,24 @@ public class PersonalityProfileDetector extends IPlugin<Message, Message, Person
             @Override
             public void onCompleted() {
                 Profile user = profileRepository.getByUsername(params.getUsername());
-                List<Personality> userPersonalityList = user.getPersonalities();
-                if (userPersonalityList == null) {
-                    userPersonalityList = new ArrayList<>();
-                }
-                userPersonalityList.add(calculatePersonality(allMessages));
-                logger.info("Personality calculated");
+                if (user != null) {
+                    List<Personality> userPersonalityList = user.getPersonalities();
+                    if (userPersonalityList == null) {
+                        userPersonalityList = new ArrayList<>();
+                    }
+                    userPersonalityList.add(calculatePersonality(allMessages));
+                    logger.info("Personality calculated");
 
-                // update the user profile
-                Query<Profile> query = profileRepository.createQuery();
-                query.field("username").equal(user.getUsername());
-                UpdateOperations<Profile> update = profileRepository.createUpdateOperations();
-                update.set("personalities", userPersonalityList);
-                profileRepository.updateFirst(query, update);
+                    // update the user profile
+                    Query<Profile> query = profileRepository.createQuery();
+                    query.field("username").equal(user.getUsername());
+                    UpdateOperations<Profile> update = profileRepository.createUpdateOperations();
+                    update.set("personalities", userPersonalityList);
+                    profileRepository.updateFirst(query, update);
+
+                } else {
+                    logger.info("No user profile found");
+                }
 
                 reportPluginAsCompleted();
                 subscriber.onCompleted();
