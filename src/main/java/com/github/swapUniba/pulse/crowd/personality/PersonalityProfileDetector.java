@@ -101,19 +101,53 @@ public class PersonalityProfileDetector extends IPlugin<Message, Message, Person
      */
     private Personality calculatePersonality(List<Message> messages) {
 
-        // TODO replace code here with real-world one
         long timestamp = Calendar.getInstance().getTimeInMillis();
-        Random random = new Random();
+
+        String query = "http://90.147.170.25:8080/PersonalityEmpathy/rest/UserService/userPersonality";
+        ArrayList<String> list = new ArrayList<String>();
+
+        for (Message message : messages)
+        {
+            list.add(message.getText());
+        }
+        JSONObject json = new JSONObject();
+        json.put("messages", new JSONArray(list));
+
+        logger.info(json);
+        URL url = new URL(query);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(5000);
+        conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
+        conn.setRequestMethod("POST");
+
+        OutputStream os = conn.getOutputStream();
+        os.write(json.toString().getBytes("UTF-8"));
+        os.close();
+
+        // read the response
+        InputStream in = new BufferedInputStream(conn.getInputStream());
+        String result = org.apache.commons.io.IOUtils.toString(in, "UTF-8");
+
+        JSONObject jsonObject = new JSONObject(result);
+
+        String ext = jsonObject.getString("ext");
+        String con = jsonObject.getString("con");
+        String ope = jsonObject.getString("ope");
+        String agr = jsonObject.getString("agr");
+        String neu = jsonObject.getString("neu");
 
         Personality userPersonality = new Personality();
         userPersonality.setSource("personality-detector");
         userPersonality.setTimestamp(timestamp);
-        userPersonality.setConfidence(random.nextDouble());
-        userPersonality.setAgreeableness(random.nextDouble());
-        userPersonality.setNeuroticism(random.nextDouble());
-        userPersonality.setConscientiousness(random.nextDouble());
-        userPersonality.setOpenness(random.nextDouble());
-        userPersonality.setExtroversion(random.nextDouble());
+
+        userPersonality.setConfidence(Double.parseDouble(con));
+        userPersonality.setAgreeableness(Double.parseDouble(agr));
+        userPersonality.setNeuroticism(Double.parseDouble(neu));
+        userPersonality.setConscientiousness(Double.parseDouble(con));
+        userPersonality.setOpenness(Double.parseDouble(ope));
+        userPersonality.setExtroversion(Double.parseDouble(ext));
 
         return userPersonality;
     }
